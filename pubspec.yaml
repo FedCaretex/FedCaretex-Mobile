@@ -1,0 +1,45 @@
+name: smartwealth_ai
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI & Fonts
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+
+  # State Management
+  flutter_riverpod: ^2.5.1
+
+  # Utilities
+  shared_preferences: ^2.3.2
+  http: ^1.2.2
+  uuid: ^4.4.0
+  url_launcher: ^6.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  # assets di bawah ini hanya diaktifkan saat file sudah ada.
+  # Untuk menambah gambar, taruh di assets/images/ lalu daftar di sini.
+  # assets:
+  #   - assets/images/
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  adaptive_icon_background: "#FFFF"
+  adaptive_icon_foreground: "assets/icons/app_icon.png"
+

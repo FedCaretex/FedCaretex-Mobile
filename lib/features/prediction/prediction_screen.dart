@@ -1,22 +1,58 @@
-/// ====================================================================
-/// File: prediction_screen.dart
-/// --------------------------------------------------------------------
-/// Prediction - Hasil Prediksi AI Pradiabetes
-/// Desain: Pastel risk gauge, SHAP feature bars, riwayat prediksi
-/// ====================================================================
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../core/constants/app_colors.dart';
 
-class PredictionScreen extends StatelessWidget {
+import '../../core/constants/app_colors.dart';
+import '../../models/prediction_models.dart';
+import '../../shared/widgets/fade_in.dart';
+import 'components/shap_bar_chart.dart';
+import 'services/prediction_provider.dart';
+
+class PredictionScreen extends ConsumerStatefulWidget {
   const PredictionScreen({super.key});
 
   @override
+  ConsumerState<PredictionScreen> createState() => _PredictionScreenState();
+}
+
+class _PredictionScreenState extends ConsumerState<PredictionScreen> {
+  final _form = {
+    'pregnancies': TextEditingController(text: '1'),
+    'glucose': TextEditingController(text: '110'),
+    'blood_pressure': TextEditingController(text: '80'),
+    'skin_thickness': TextEditingController(text: '22'),
+    'insulin': TextEditingController(text: '85'),
+    'bmi': TextEditingController(text: '23.4'),
+    'diabetes_pedigree': TextEditingController(text: '0.35'),
+    'age': TextEditingController(text: '34'),
+  };
+
+  @override
+  void dispose() {
+    for (final c in _form.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final features = <String, dynamic>{
+      'pregnancies': double.parse(_form['pregnancies']!.text),
+      'glucose': double.parse(_form['glucose']!.text),
+      'blood_pressure': double.parse(_form['blood_pressure']!.text),
+      'skin_thickness': double.parse(_form['skin_thickness']!.text),
+      'insulin': double.parse(_form['insulin']!.text),
+      'bmi': double.parse(_form['bmi']!.text),
+      'diabetes_pedigree': double.parse(_form['diabetes_pedigree']!.text),
+      'age': int.parse(_form['age']!.text),
+    };
+    await ref.read(predictionProvider.notifier).predict(features);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    const riskPercent = 0.32; // 32% risiko
-    const riskLabel = 'Risiko Sedang';
-    const riskColor = AppColors.warning;
+    final state = ref.watch(predictionProvider);
+    final result = state.result;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -29,189 +65,64 @@ class PredictionScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              // Header
-              Text(
-                'Prediksi AI',
-                style: GoogleFonts.quicksand(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimaryLight,
-                ),
-              ),
-              Text(
-                'Analisis risiko pradiabetes berbasis ML',
-                style: GoogleFonts.quicksand(
-                  fontSize: 13,
-                  color: AppColors.textSecondaryLight,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // ── Risk Gauge Card ──────────────────────────
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFFF8E1), Color(0xFFFFECB3)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              FadeInUp(
+                child: Text(
+                  'Prediksi risiko',
+                  style: GoogleFonts.quicksand(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimaryLight,
                   ),
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.warning.withValues(alpha: 0.2),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.8),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Icon(Icons.analytics_rounded,
-                              color: AppColors.warning, size: 22),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Hasil Prediksi Terbaru',
-                                style: GoogleFonts.quicksand(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                    color: AppColors.textPrimaryLight)),
-                            Text('Diperbarui hari ini, 09:41',
-                                style: GoogleFonts.quicksand(
-                                    fontSize: 11,
-                                    color: AppColors.textSecondaryLight)),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Big percent display
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '32',
-                          style: GoogleFonts.inter(
-                            fontSize: 72,
-                            fontWeight: FontWeight.bold,
-                            color: riskColor,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(
-                            '%',
-                            style: GoogleFonts.inter(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: riskColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: riskColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        riskLabel,
-                        style: GoogleFonts.quicksand(
-                          color: riskColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Progress bar
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: riskPercent,
-                        backgroundColor: Colors.white.withValues(alpha: 0.5),
-                        valueColor:
-                            const AlwaysStoppedAnimation<Color>(riskColor),
-                        minHeight: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('0% Aman',
-                            style: GoogleFonts.quicksand(
-                                fontSize: 10,
-                                color: AppColors.success,
-                                fontWeight: FontWeight.bold)),
-                        Text('50% Sedang',
-                            style: GoogleFonts.quicksand(
-                                fontSize: 10,
-                                color: AppColors.warning,
-                                fontWeight: FontWeight.bold)),
-                        Text('100% Tinggi',
-                            style: GoogleFonts.quicksand(
-                                fontSize: 10,
-                                color: AppColors.error,
-                                fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-
-              // ── SHAP Feature Importance ──────────────────
-              Text(
-                'Faktor Penentu (SHAP)',
-                style: GoogleFonts.quicksand(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimaryLight,
+              FadeInUp(
+                delay: const Duration(milliseconds: 60),
+                child: Text(
+                  'Isi data kesehatanmu. Hasil dilengkapi penjelasan faktor, bukan hanya angka.',
+                  style: GoogleFonts.quicksand(
+                    fontSize: 13,
+                    color: AppColors.textSecondaryLight,
+                  ),
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Fitur yang paling memengaruhi hasil prediksi',
-                style: GoogleFonts.quicksand(
-                  fontSize: 12,
-                  color: AppColors.textSecondaryLight,
-                ),
+              const SizedBox(height: 20),
+              FadeInUp(
+                delay: const Duration(milliseconds: 100),
+                child: _InputCard(form: _form, onSubmit: _submit, loading: state.loading),
               ),
-              const SizedBox(height: 16),
-              _buildSHAPCard(),
-              const SizedBox(height: 24),
-
-              // ── Input Data ──────────────────────────────
-              Text(
-                'Data Input Model',
-                style: GoogleFonts.quicksand(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimaryLight,
+              if (state.error != null) ...[
+                const SizedBox(height: 12),
+                Text(state.error!,
+                    style: GoogleFonts.quicksand(
+                        color: AppColors.error, fontWeight: FontWeight.w600)),
+              ],
+              if (result != null) ...[
+                const SizedBox(height: 20),
+                FadeScaleIn(child: _RiskCard(result: result)),
+                const SizedBox(height: 16),
+                FadeInUp(
+                  delay: const Duration(milliseconds: 120),
+                  child: ShapBarChart(items: result.shapBreakdown),
                 ),
-              ),
-              const SizedBox(height: 16),
-              _buildInputGrid(),
-              const SizedBox(height: 24),
-
-              // ── Recommendation ──────────────────────────
-              _buildRecommendation(),
+                const SizedBox(height: 16),
+                FadeInUp(
+                  delay: const Duration(milliseconds: 180),
+                  child: _RecommendationCard(items: result.recommendations),
+                ),
+              ],
+              if (state.history.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                Text(
+                  'Riwayat prediksi',
+                  style: GoogleFonts.quicksand(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimaryLight,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...state.history.take(5).map((h) => _HistoryTile(item: h)),
+              ],
               const SizedBox(height: 120),
             ],
           ),
@@ -219,199 +130,246 @@ class PredictionScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildSHAPCard() {
-    final features = [
-      _SHAP('Glukosa Puasa', 0.85, AppColors.error),
-      _SHAP('BMI', 0.62, AppColors.warning),
-      _SHAP('Usia', 0.55, AppColors.warning),
-      _SHAP('Tekanan Darah', 0.38, AppColors.info),
-      _SHAP('Aktivitas Fisik', 0.28, AppColors.success),
-      _SHAP('Riwayat Keluarga', 0.20, AppColors.info),
-    ];
+class _InputCard extends StatelessWidget {
+  final Map<String, TextEditingController> form;
+  final VoidCallback onSubmit;
+  final bool loading;
 
+  const _InputCard({
+    required this.form,
+    required this.onSubmit,
+    required this.loading,
+  });
+
+  static const labels = {
+    'pregnancies': 'Kehamilan',
+    'glucose': 'Glukosa',
+    'blood_pressure': 'Tekanan darah',
+    'skin_thickness': 'Lipatan kulit',
+    'insulin': 'Insulin',
+    'bmi': 'BMI',
+    'diabetes_pedigree': 'Riwayat keluarga',
+    'age': 'Usia',
+  };
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
-        children: features.map((f) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 130,
-                  child: Text(
-                    f.label,
-                    style: GoogleFonts.quicksand(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimaryLight,
+        children: [
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: form.entries.map((e) {
+              return SizedBox(
+                width: (MediaQuery.sizeOf(context).width - 72) / 2,
+                child: TextField(
+                  controller: e.value,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: labels[e.key],
+                    filled: true,
+                    fillColor: AppColors.backgroundLight,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
                     ),
                   ),
                 ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: LinearProgressIndicator(
-                          value: f.value,
-                          backgroundColor:
-                              f.color.withValues(alpha: 0.1),
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(f.color),
-                          minHeight: 10,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${(f.value * 100).toInt()}%',
-                        style: GoogleFonts.inter(
-                          fontSize: 10,
-                          color: f.color,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: loading ? null : onSubmit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+              ),
+              child: loading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text('Lihat hasil & penjelasan',
+                      style: GoogleFonts.quicksand(fontWeight: FontWeight.bold)),
             ),
-          );
-        }).toList(),
+          ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildInputGrid() {
-    final inputs = [
-      _Input('Glukosa Puasa', '110 mg/dL', AppColors.cardMint),
-      _Input('BMI', '23.4', AppColors.cardBlue),
-      _Input('Tekanan Darah', '120/80', AppColors.cardPink),
-      _Input('Usia', '34 tahun', AppColors.cardPeach),
-      _Input('Aktivitas', '3x/minggu', AppColors.cardIndigo),
-      _Input('Kolesterol', '180 mg/dL', AppColors.cardYellow),
-    ];
+class _RiskCard extends StatelessWidget {
+  final PredictionResult result;
+  const _RiskCard({required this.result});
 
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 2.2,
-      children: inputs.map((inp) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: inp.color,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(inp.label,
-                  style: GoogleFonts.quicksand(
-                      fontSize: 11,
-                      color: AppColors.textSecondaryLight)),
-              Text(inp.value,
-                  style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimaryLight)),
-            ],
-          ),
-        );
-      }).toList(),
-    );
+  Color get _color {
+    switch (result.category) {
+      case 'Rendah':
+        return AppColors.success;
+      case 'Tinggi':
+        return AppColors.error;
+      default:
+        return AppColors.warning;
+    }
   }
 
-  Widget _buildRecommendation() {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: _color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Column(
+        children: [
+          Text('Skor risiko',
+              style: GoogleFonts.quicksand(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondaryLight)),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: result.riskScore),
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, _) {
+              return Text(
+                value.toStringAsFixed(0),
+                style: GoogleFonts.inter(
+                  fontSize: 64,
+                  fontWeight: FontWeight.bold,
+                  color: _color,
+                ),
+              );
+            },
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: _color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Risiko ${result.category.toLowerCase()}',
+              style: GoogleFonts.quicksand(
+                  color: _color, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            result.message,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.quicksand(
+              fontSize: 13,
+              height: 1.45,
+              color: AppColors.textPrimaryLight,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecommendationCard extends StatelessWidget {
+  final List<String> items;
+  const _RecommendationCard({required this.items});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: AppColors.mintGradient,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.success.withValues(alpha: 0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Text('🩺', style: TextStyle(fontSize: 24)),
-              const SizedBox(width: 10),
-              Text(
-                'Rekomendasi Dokter AI',
-                style: GoogleFonts.quicksand(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+          Text('Saran praktis',
+              style: GoogleFonts.quicksand(
                   color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...[
-            'Kurangi konsumsi karbohidrat sederhana',
-            'Tingkatkan aktivitas fisik jadi 5x/minggu',
-            'Pantau glukosa darah setiap pagi',
-            'Konsultasikan dengan dokter dalam 2 minggu',
-          ].map((tip) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.check_circle_rounded,
-                        color: Colors.white, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        tip,
-                        style: GoogleFonts.quicksand(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16)),
+          const SizedBox(height: 10),
+          ...items.map(
+            (tip) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.check_circle_rounded,
+                      color: Colors.white, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      tip,
+                      style: GoogleFonts.quicksand(
+                          color: Colors.white.withValues(alpha: 0.95),
                           fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.9),
-                          height: 1.4,
-                        ),
-                      ),
+                          height: 1.4),
                     ),
-                  ],
-                ),
-              )),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _SHAP {
-  final String label;
-  final double value;
-  final Color color;
-  const _SHAP(this.label, this.value, this.color);
-}
+class _HistoryTile extends StatelessWidget {
+  final HistoryItem item;
+  const _HistoryTile({required this.item});
 
-class _Input {
-  final String label, value;
-  final Color color;
-  const _Input(this.label, this.value, this.color);
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Risiko ${item.category}',
+                    style: GoogleFonts.quicksand(fontWeight: FontWeight.bold)),
+                Text(
+                  'Faktor utama: ${item.topFeature}',
+                  style: GoogleFonts.quicksand(
+                      fontSize: 12, color: AppColors.textSecondaryLight),
+                ),
+              ],
+            ),
+          ),
+          Text('${item.riskScore.toStringAsFixed(0)}%',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
 }

@@ -1,26 +1,28 @@
 /// ====================================================================
 /// File: shap_bar_chart.dart
-/// --------------------------------------------------------------------
-/// SHAP Feature Importance Bar Chart — Pure Flutter (no fl_chart)
+/// SHAP feature contribution — bar horizontal dengan animasi lebar.
 /// ====================================================================
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../models/prediction_models.dart';
 
 class ShapBarChart extends StatelessWidget {
-  const ShapBarChart({super.key});
+  final List<ShapItem> items;
 
-  static const _features = [
-    _ShapFeature('Glukosa Puasa', 0.85, AppColors.error),
-    _ShapFeature('BMI', 0.62, AppColors.warning),
-    _ShapFeature('Usia', 0.55, Color(0xFF6C63FF)),
-    _ShapFeature('Tekanan Darah', 0.38, AppColors.info),
-    _ShapFeature('Aktivitas Fisik', 0.28, AppColors.success),
-  ];
+  const ShapBarChart({super.key, required this.items});
 
   @override
   Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final maxAbs = items
+        .map((e) => e.contribution.abs())
+        .reduce((a, b) => a > b ? a : b)
+        .clamp(0.0001, 999);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -38,85 +40,99 @@ class ShapBarChart extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Feature Importance (SHAP)',
+            'Kenapa hasilnya seperti ini',
             style: GoogleFonts.quicksand(
               fontWeight: FontWeight.bold,
               fontSize: 15,
               color: AppColors.textPrimaryLight,
             ),
           ),
-          const SizedBox(height: 20),
-          // Bar chart rows
-          ..._features.map((f) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: _buildBarRow(f),
-              )),
+          const SizedBox(height: 6),
+          Text(
+            'Semakin panjang batang, semakin besar pengaruhnya pada skor.',
+            style: GoogleFonts.quicksand(
+              fontSize: 12,
+              color: AppColors.textSecondaryLight,
+            ),
+          ),
+          const SizedBox(height: 18),
+          ...items.take(6).toList().asMap().entries.map((entry) {
+            final i = entry.key;
+            final f = entry.value;
+            final ratio = (f.contribution.abs() / maxAbs).clamp(0.08, 1.0);
+            final color = f.contribution >= 0 ? AppColors.warning : AppColors.success;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          f.label,
+                          style: GoogleFonts.quicksand(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimaryLight,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        f.contribution >= 0 ? 'menaikkan' : 'menurunkan',
+                        style: GoogleFonts.quicksand(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: ratio),
+                    duration: Duration(milliseconds: 500 + i * 90),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, value, _) {
+                      return LayoutBuilder(builder: (context, constraints) {
+                        return Stack(
+                          children: [
+                            Container(
+                              height: 12,
+                              width: constraints.maxWidth,
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            Container(
+                              height: 12,
+                              width: constraints.maxWidth * value,
+                              decoration: BoxDecoration(
+                                color: color,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                          ],
+                        );
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    f.explanation,
+                    style: GoogleFonts.quicksand(
+                      fontSize: 11,
+                      color: AppColors.textSecondaryLight,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );
   }
-
-  Widget _buildBarRow(_ShapFeature f) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 120,
-          child: Text(
-            f.label,
-            style: GoogleFonts.quicksand(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimaryLight,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              LayoutBuilder(builder: (context, constraints) {
-                return Stack(
-                  children: [
-                    Container(
-                      height: 12,
-                      width: constraints.maxWidth,
-                      decoration: BoxDecoration(
-                        color: f.color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 600),
-                      height: 12,
-                      width: constraints.maxWidth * f.value,
-                      decoration: BoxDecoration(
-                        color: f.color,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                  ],
-                );
-              }),
-              const SizedBox(height: 3),
-              Text(
-                '${(f.value * 100).toInt()}%',
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  color: f.color,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ShapFeature {
-  final String label;
-  final double value;
-  final Color color;
-  const _ShapFeature(this.label, this.value, this.color);
 }

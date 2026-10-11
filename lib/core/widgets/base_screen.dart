@@ -1,7 +1,7 @@
 /// ====================================================================
 /// File: base_screen.dart
 /// --------------------------------------------------------------------
-/// Widget BaseScreen - Wrapper layar umum SmartWealth AI
+/// Widget BaseScreen - Wrapper layar umum FedCaretex AI
 ///
 /// Terinspirasi dari Synexa BaseScreen — menyederhanakan
 /// pembuatan setiap halaman agar konsisten.

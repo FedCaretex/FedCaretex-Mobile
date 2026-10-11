@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// ====================================================================
 /// File: app_colors.dart
 /// --------------------------------------------------------------------
-/// Definisi Warna Aplikasi SmartWealth AI
+/// Definisi Warna Aplikasi FedCaretex AI
 ///
 /// Palet warna komik-pastel yang cerah, informatif, dan ramah
 /// untuk semua kalangan. Terinspirasi dari Synexa App.
@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 /// Warna Utama: Indigo/Blue Pastel (identitas AI Health)
 /// Aksen: Coral, Mint, Lavender, Peach
 ///
-/// Author: SmartWealth Dev Team
+/// Author: FedCaretex Dev Team
 /// ====================================================================
 
 class AppColors {

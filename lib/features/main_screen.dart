@@ -1,7 +1,7 @@
 /// ====================================================================
 /// File: main_screen.dart
 /// --------------------------------------------------------------------
-/// MainScreen - Hub navigasi utama SmartWealth AI
+/// MainScreen - Hub navigasi utama FedCaretex AI
 ///
 /// Menggunakan AppNavbar (terinspirasi Synexa CustomNavbar)
 /// dengan AnimatedSwitcher untuk perpindahan layar smooth.

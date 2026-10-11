@@ -1,15 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class AuthBottomSection extends StatefulWidget {
-  const AuthBottomSection({super.key});
+import '../../../core/constants/app_colors.dart';
+
+class AuthBottomSection extends StatelessWidget {
+  final VoidCallback onToggle;
+  final bool isRegister;
+
+  const AuthBottomSection({
+    super.key,
+    required this.onToggle,
+    this.isRegister = false,
+  });
 
   @override
-  State<AuthBottomSection> createState() => _AuthBottomSectionState();
-}
-
-class _AuthBottomSectionState extends State<AuthBottomSection> {
-  final _supabase = Supabase.instance.client;
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: onToggle,
+      child: Text(
+        isRegister ? 'Sudah punya akun? Masuk' : 'Belum punya akun? Daftar',
+        style: GoogleFonts.quicksand(
+          fontWeight: FontWeight.bold,
+          color: AppColors.primary,
+        ),
+      ),
+    );
+  }
 }

@@ -1,7 +1,7 @@
 /// ====================================================================
 /// File: app_navbar.dart
 /// --------------------------------------------------------------------
-/// Widget AppNavbar - Navigasi Bawah SmartWealth AI
+/// Widget AppNavbar - Navigasi Bawah FedCaretex AI
 ///
 /// Terinspirasi dari Synexa CustomNavbar:
 /// - Floating pill design dengan shadow
@@ -11,7 +11,7 @@
 /// - Animated container per tab
 /// - Label muncul hanya saat tab aktif (pill expanding)
 ///
-/// Author: SmartWealth Dev Team
+/// Author: FedCaretex Dev Team
 /// ====================================================================
 
 import 'package:flutter/material.dart';

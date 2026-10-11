@@ -2,23 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'features/main_screen.dart';
+import 'features/auth/auth_provider.dart';
+import 'features/auth/login_screen.dart';
 import 'core/constants/app_colors.dart';
 
 void main() {
   runApp(
     const ProviderScope(
-      child: SmartWealthApp(),
+      child: FedCaretexApp(),
     ),
   );
 }
 
-class SmartWealthApp extends StatelessWidget {
-  const SmartWealthApp({super.key});
+class FedCaretexApp extends ConsumerWidget {
+  const FedCaretexApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(authProvider);
+
     return MaterialApp(
-      title: 'SmartWealth AI',
+      title: 'FedCaretex AI',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.light,
       theme: ThemeData(
@@ -26,7 +30,7 @@ class SmartWealthApp extends StatelessWidget {
         scaffoldBackgroundColor: AppColors.backgroundLight,
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.primary,
-          background: AppColors.backgroundLight,
+          surface: AppColors.backgroundLight,
         ),
         textTheme: GoogleFonts.quicksandTextTheme(
           Theme.of(context).textTheme,
@@ -40,23 +44,20 @@ class SmartWealthApp extends StatelessWidget {
           foregroundColor: AppColors.textPrimaryLight,
         ),
       ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: AppColors.backgroundDark,
-        colorScheme: ColorScheme.fromSeed(
-          brightness: Brightness.dark,
-          seedColor: AppColors.primary,
-          background: AppColors.backgroundDark,
-        ),
-        textTheme: GoogleFonts.quicksandTextTheme(
-          ThemeData.dark().textTheme,
-        ).apply(
-          bodyColor: AppColors.textPrimaryDark,
-          displayColor: AppColors.textPrimaryDark,
-        ),
+      home: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 450),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        child: session == null
+            ? const LoginScreen(key: ValueKey('login'))
+            : const MainScreen(key: ValueKey('home')),
       ),
-      home: const MainScreen(),
     );
   }
 }
-

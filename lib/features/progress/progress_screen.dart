@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../shared/widgets/fade_in.dart';
 
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({super.key});
@@ -25,61 +26,69 @@ class ProgressScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              // Header
-              Row(
-                children: [
-                  Text(
-                    'Perkembangan',
-                    style: GoogleFonts.quicksand(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimaryLight,
+              FadeInUp(
+                child: Row(
+                  children: [
+                    Text(
+                      'Perkembangan',
+                      style: GoogleFonts.quicksand(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimaryLight,
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  _PillChip(label: 'Minggu Ini', active: true),
-                  const SizedBox(width: 8),
-                  _PillChip(label: 'Bulan', active: false),
-                ],
+                    const Spacer(),
+                    _PillChip(label: 'Minggu Ini', active: true),
+                    const SizedBox(width: 8),
+                    _PillChip(label: 'Bulan', active: false),
+                  ],
+                ),
               ),
               const SizedBox(height: 6),
-              Text(
-                'Pantau kondisi tubuh & risiko pradiabetes',
-                style: GoogleFonts.quicksand(
-                  fontSize: 13,
-                  color: AppColors.textSecondaryLight,
+              FadeInUp(
+                delay: const Duration(milliseconds: 80),
+                child: Text(
+                  'Pantau kondisi tubuh & risiko pradiabetes',
+                  style: GoogleFonts.quicksand(
+                    fontSize: 13,
+                    color: AppColors.textSecondaryLight,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
 
-              // ── Glucose Chart Card ──────────────────────
-              _buildChartCard(
-                title: 'Glukosa Darah',
-                subtitle: 'mg/dL, 7 hari terakhir',
-                color: AppColors.cardMint,
-                icon: Icons.water_drop_rounded,
-                iconColor: AppColors.success,
-                chartData: [82, 95, 88, 110, 92, 86, 90],
-                maxVal: 140,
-                unit: 'mg/dL',
+              FadeInUp(
+                delay: const Duration(milliseconds: 140),
+                child: _buildChartCard(
+                  title: 'Glukosa Darah',
+                  subtitle: 'mg/dL, 7 hari terakhir',
+                  color: AppColors.cardMint,
+                  icon: Icons.water_drop_rounded,
+                  iconColor: AppColors.success,
+                  chartData: [82, 95, 88, 110, 92, 86, 90],
+                  maxVal: 140,
+                  unit: 'mg/dL',
+                ),
               ),
               const SizedBox(height: 16),
-
-              // ── Heart Rate Card ──────────────────────────
-              _buildChartCard(
-                title: 'Detak Jantung',
-                subtitle: 'bpm, 7 hari terakhir',
-                color: AppColors.cardPink,
-                icon: Icons.favorite_rounded,
-                iconColor: AppColors.error,
-                chartData: [72, 68, 75, 80, 70, 74, 72],
-                maxVal: 120,
-                unit: 'bpm',
+              FadeInUp(
+                delay: const Duration(milliseconds: 200),
+                child: _buildChartCard(
+                  title: 'Detak Jantung',
+                  subtitle: 'bpm, 7 hari terakhir',
+                  color: AppColors.cardPink,
+                  icon: Icons.favorite_rounded,
+                  iconColor: AppColors.error,
+                  chartData: [72, 68, 75, 80, 70, 74, 72],
+                  maxVal: 120,
+                  unit: 'bpm',
+                ),
               ),
               const SizedBox(height: 16),
-
-              // ── BMI Progress ─────────────────────────────
-              _buildBMICard(),
+              FadeInUp(
+                delay: const Duration(milliseconds: 260),
+                child: _buildBMICard(),
+              ),
               const SizedBox(height: 16),
 
               // ── Summary Timeline ─────────────────────────

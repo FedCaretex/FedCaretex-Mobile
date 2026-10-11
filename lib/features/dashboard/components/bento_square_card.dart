@@ -22,7 +22,7 @@ class BentoSquareCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 180,
+        height: 156,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: backgroundColor,
@@ -60,18 +60,18 @@ class BentoSquareCard extends StatelessWidget {
                 color: Colors.black.withOpacity(0.6),
               ),
             ),
-            Row(
+            const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Check',
+                Text(
+                  'Lihat',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                     color: Colors.black87,
                   ),
                 ),
-                const Icon(Icons.arrow_forward, size: 16, color: Colors.black87),
+                Icon(Icons.arrow_forward, size: 16, color: Colors.black87),
               ],
             )
           ],

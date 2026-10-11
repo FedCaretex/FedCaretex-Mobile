@@ -35,6 +35,7 @@ class ProfileHeader extends StatelessWidget {
                   style: GoogleFonts.quicksand(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
+                    color: const Color(0xFF1E1B4B),
                   ),
                 ),
               ],

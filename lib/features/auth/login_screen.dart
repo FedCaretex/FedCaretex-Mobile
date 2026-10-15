@@ -175,6 +175,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
               ),
+              Center(
+                child: TextButton(
+                  onPressed: _loading
+                      ? null
+                      : () => ref.read(authProvider.notifier).enterGuest(),
+                  child: Text(
+                    'Lanjut tanpa akun (demo)',
+                    style: GoogleFonts.quicksand(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondaryLight,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

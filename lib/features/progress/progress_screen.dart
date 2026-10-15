@@ -29,15 +29,19 @@ class ProgressScreen extends StatelessWidget {
               FadeInUp(
                 child: Row(
                   children: [
-                    Text(
-                      'Perkembangan',
-                      style: GoogleFonts.quicksand(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimaryLight,
+                    Expanded(
+                      child: Text(
+                        'Perkembangan',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.quicksand(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimaryLight,
+                        ),
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     _PillChip(label: 'Minggu Ini', active: true),
                     const SizedBox(width: 8),
                     _PillChip(label: 'Bulan', active: false),
@@ -121,7 +125,7 @@ class ProgressScreen extends StatelessWidget {
     required String unit,
   }) {
     final days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-    final maxData = chartData.reduce((a, b) => a > b ? a : b);
+    final maxData = chartData.reduce((a, b) => a > b ? a : b).clamp(1, 1 << 30);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -177,13 +181,14 @@ class ProgressScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           // Bar chart
+          // Tinggi total = bar (maks 56) + jarak 6 + label ~14 → 96 cukup, 70 sebelumnya overflow.
           SizedBox(
-            height: 70,
+            height: 96,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: List.generate(chartData.length, (i) {
-                final barHeight = (chartData[i] / maxData) * 60;
+                final barHeight = (chartData[i] / maxData) * 56;
                 final isLast = i == chartData.length - 1;
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.end,

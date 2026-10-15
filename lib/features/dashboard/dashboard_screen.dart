@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../shared/utils/quick_settings_sheet.dart';
 import '../../shared/widgets/fade_in.dart';
 import '../auth/auth_provider.dart';
 import '../main_screen.dart';
 import 'components/bento_square_card.dart';
+import 'components/global_search_sheet.dart';
+import 'components/notification_center_sheet.dart';
 import 'components/profile_header.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -31,9 +34,11 @@ class DashboardScreen extends ConsumerWidget {
               FadeInUp(
                 child: ProfileHeader(
                   userName: name,
-                  avatarUrl: 'https://i.pravatar.cc/150?img=11',
-                  onSearchTap: () {},
-                  onNotificationTap: () {},
+                  photoUrl: session?.photoUrl,
+                  onAvatarTap: () => QuickSettingsSheet.show(context),
+                  onSearchTap: () => GlobalSearchSheet.show(context),
+                  onNotificationTap: () =>
+                      NotificationCenterSheet.show(context),
                 ),
               ),
               const SizedBox(height: 20),

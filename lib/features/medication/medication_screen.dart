@@ -54,10 +54,18 @@ class MedicationScreen extends ConsumerStatefulWidget {
 }
 
 class _MedicationScreenState extends ConsumerState<MedicationScreen> {
-  int _selectedDayIndex = 3; // today = Thu
-
   static const _days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-  static const _dates = [21, 22, 23, 24, 25, 26, 27];
+
+  // Minggu berjalan (Senin-Minggu) dihitung dari tanggal hari ini.
+  late final List<int> _dates = () {
+    final now = DateTime.now();
+    final monday = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: now.weekday - 1));
+    return List.generate(7, (i) => monday.add(Duration(days: i)).day);
+  }();
+
+  // weekday: Senin = 1 ... Minggu = 7
+  late int _selectedDayIndex = DateTime.now().weekday - 1;
 
   @override
   Widget build(BuildContext context) {
@@ -296,7 +304,7 @@ class _MedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorIdx = med.id.hashCode % _colors.length;
+    final colorIdx = (int.tryParse(med.id) ?? 0) % _colors.length;
     final cardColor = _colors[colorIdx];
 
     return GestureDetector(

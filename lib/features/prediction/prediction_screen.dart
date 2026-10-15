@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/prediction_models.dart';
 import '../../shared/widgets/fade_in.dart';
+import '../fl_engine/data.dart';
+import '../fl_sync/services/fl_sync_provider.dart';
 import 'components/shap_bar_chart.dart';
 import 'services/prediction_provider.dart';
 
@@ -16,43 +18,98 @@ class PredictionScreen extends ConsumerStatefulWidget {
 }
 
 class _PredictionScreenState extends ConsumerState<PredictionScreen> {
-  final _form = {
-    'pregnancies': TextEditingController(text: '1'),
-    'glucose': TextEditingController(text: '110'),
-    'blood_pressure': TextEditingController(text: '80'),
-    'skin_thickness': TextEditingController(text: '22'),
-    'insulin': TextEditingController(text: '85'),
-    'bmi': TextEditingController(text: '23.4'),
-    'diabetes_pedigree': TextEditingController(text: '0.35'),
-    'age': TextEditingController(text: '34'),
+  final _c = {
+    'age': TextEditingController(text: '45'),
+    'bmi': TextEditingController(text: '25'),
+    'hba1c': TextEditingController(text: '5.5'),
+    'glucose': TextEditingController(text: '100'),
   };
+  String _gender = 'Female';
+  String _smoking = 'never';
+  bool _hypertension = false;
+  bool _heartDisease = false;
+  bool _filling = false;
 
   @override
   void dispose() {
-    for (final c in _form.values) {
+    for (final c in _c.values) {
       c.dispose();
     }
     super.dispose();
   }
 
+  double? _num(String key) =>
+      double.tryParse(_c[key]!.text.trim().replaceAll(',', '.'));
+
+  void _toast(String msg) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(msg)));
+  }
+
   Future<void> _submit() async {
-    final features = <String, dynamic>{
-      'pregnancies': double.parse(_form['pregnancies']!.text),
-      'glucose': double.parse(_form['glucose']!.text),
-      'blood_pressure': double.parse(_form['blood_pressure']!.text),
-      'skin_thickness': double.parse(_form['skin_thickness']!.text),
-      'insulin': double.parse(_form['insulin']!.text),
-      'bmi': double.parse(_form['bmi']!.text),
-      'diabetes_pedigree': double.parse(_form['diabetes_pedigree']!.text),
-      'age': int.parse(_form['age']!.text),
-    };
-    await ref.read(predictionProvider.notifier).predict(features);
+    // Rentang sama dengan validasi pydantic di backend (schemas.ClinicalFeatures).
+    final errs = <String>[];
+    double? read(String key, String label, double lo, double hi) {
+      final v = _num(key);
+      if (v == null || v < lo || v > hi) {
+        errs.add('$label (${lo.toInt()}-${hi.toInt()})');
+        return null;
+      }
+      return v;
+    }
+
+    final age = read('age', 'Usia', 0, 120);
+    final bmi = read('bmi', 'BMI', 10, 100);
+    final hba1c = read('hba1c', 'HbA1c', 3, 20);
+    final glucose = read('glucose', 'Glukosa', 40, 500);
+    if (errs.isNotEmpty) {
+      _toast('Periksa isian: ${errs.join(', ')}');
+      return;
+    }
+
+    final input = ClinicalInput(
+      gender: _gender,
+      age: age!,
+      hypertension: _hypertension ? 1 : 0,
+      heartDisease: _heartDisease ? 1 : 0,
+      smokingHistory: _smoking,
+      bmi: bmi!,
+      hba1c: hba1c!,
+      bloodGlucose: glucose!,
+    );
+    await ref.read(predictionProvider.notifier).predict(input);
+  }
+
+  /// [DEMO] Isi form dengan 1 pasien acak dari dataset server.
+  Future<void> _fillDemo() async {
+    setState(() => _filling = true);
+    try {
+      final rec = await ref.read(flSyncServiceProvider).fetchDemoRecord();
+      final i = rec.input;
+      if (!mounted) return;
+      setState(() {
+        _c['age']!.text = i.age.toString();
+        _c['bmi']!.text = i.bmi.toString();
+        _c['hba1c']!.text = i.hba1c.toString();
+        _c['glucose']!.text = i.bloodGlucose.toString();
+        _gender = i.gender;
+        _smoking = i.smokingHistory;
+        _hypertension = i.hypertension == 1;
+        _heartDisease = i.heartDisease == 1;
+      });
+    } catch (e) {
+      if (mounted) _toast(describeFlError(e));
+    } finally {
+      if (mounted) setState(() => _filling = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(predictionProvider);
     final result = state.result;
+    final history = state.allHistory;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -88,7 +145,24 @@ class _PredictionScreenState extends ConsumerState<PredictionScreen> {
               const SizedBox(height: 20),
               FadeInUp(
                 delay: const Duration(milliseconds: 100),
-                child: _InputCard(form: _form, onSubmit: _submit, loading: state.loading),
+                child: _InputCard(
+                  controllers: _c,
+                  gender: _gender,
+                  smoking: _smoking,
+                  hypertension: _hypertension,
+                  heartDisease: _heartDisease,
+                  onDevice: state.onDevice,
+                  loading: state.loading,
+                  filling: _filling,
+                  onGender: (v) => setState(() => _gender = v),
+                  onSmoking: (v) => setState(() => _smoking = v),
+                  onHypertension: (v) => setState(() => _hypertension = v),
+                  onHeartDisease: (v) => setState(() => _heartDisease = v),
+                  onOnDevice: (v) =>
+                      ref.read(predictionProvider.notifier).setOnDevice(v),
+                  onFillDemo: _fillDemo,
+                  onSubmit: _submit,
+                ),
               ),
               if (state.error != null) ...[
                 const SizedBox(height: 12),
@@ -110,7 +184,7 @@ class _PredictionScreenState extends ConsumerState<PredictionScreen> {
                   child: _RecommendationCard(items: result.recommendations),
                 ),
               ],
-              if (state.history.isNotEmpty) ...[
+              if (history.isNotEmpty) ...[
                 const SizedBox(height: 24),
                 Text(
                   'Riwayat prediksi',
@@ -121,7 +195,7 @@ class _PredictionScreenState extends ConsumerState<PredictionScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ...state.history.take(5).map((h) => _HistoryTile(item: h)),
+                ...history.take(5).map((h) => _HistoryTile(item: h)),
               ],
               const SizedBox(height: 120),
             ],
@@ -132,27 +206,99 @@ class _PredictionScreenState extends ConsumerState<PredictionScreen> {
   }
 }
 
+InputDecoration _dec(String label) => InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: AppColors.backgroundLight,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+    );
+
 class _InputCard extends StatelessWidget {
-  final Map<String, TextEditingController> form;
-  final VoidCallback onSubmit;
+  final Map<String, TextEditingController> controllers;
+  final String gender;
+  final String smoking;
+  final bool hypertension;
+  final bool heartDisease;
+  final bool onDevice;
   final bool loading;
+  final bool filling;
+  final ValueChanged<String> onGender;
+  final ValueChanged<String> onSmoking;
+  final ValueChanged<bool> onHypertension;
+  final ValueChanged<bool> onHeartDisease;
+  final ValueChanged<bool> onOnDevice;
+  final VoidCallback onFillDemo;
+  final VoidCallback onSubmit;
 
   const _InputCard({
-    required this.form,
-    required this.onSubmit,
+    required this.controllers,
+    required this.gender,
+    required this.smoking,
+    required this.hypertension,
+    required this.heartDisease,
+    required this.onDevice,
     required this.loading,
+    required this.filling,
+    required this.onGender,
+    required this.onSmoking,
+    required this.onHypertension,
+    required this.onHeartDisease,
+    required this.onOnDevice,
+    required this.onFillDemo,
+    required this.onSubmit,
   });
 
-  static const labels = {
-    'pregnancies': 'Kehamilan',
-    'glucose': 'Glukosa',
-    'blood_pressure': 'Tekanan darah',
-    'skin_thickness': 'Lipatan kulit',
-    'insulin': 'Insulin',
-    'bmi': 'BMI',
-    'diabetes_pedigree': 'Riwayat keluarga',
-    'age': 'Usia',
+  static const genderLabels = {
+    'Female': 'Perempuan',
+    'Male': 'Laki-laki',
+    'Other': 'Lainnya',
   };
+  static const smokingLabels = {
+    'No Info': 'Tidak ada info',
+    'never': 'Tidak pernah',
+    'former': 'Mantan perokok',
+    'current': 'Perokok aktif',
+    'not current': 'Bukan perokok saat ini',
+    'ever': 'Pernah merokok',
+  };
+
+  Widget _numField(String key, String label, double width) {
+    return SizedBox(
+      width: width,
+      child: TextField(
+        controller: controllers[key],
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: _dec(label),
+      ),
+    );
+  }
+
+  Widget _dropdown(
+    String label,
+    String value,
+    List<String> options,
+    Map<String, String> labels,
+    ValueChanged<String> onChanged,
+  ) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      isExpanded: true,
+      decoration: _dec(label),
+      items: [
+        for (final o in options)
+          DropdownMenuItem(
+            value: o,
+            child: Text(labels[o] ?? o, overflow: TextOverflow.ellipsis),
+          ),
+      ],
+      onChanged: (v) {
+        if (v != null) onChanged(v);
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -163,30 +309,62 @@ class _InputCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: form.entries.map((e) {
-              return SizedBox(
-                width: (MediaQuery.sizeOf(context).width - 72) / 2,
-                child: TextField(
-                  controller: e.value,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: labels[e.key],
-                    filled: true,
-                    fillColor: AppColors.backgroundLight,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            value: onDevice,
+            onChanged: loading ? null : onOnDevice,
+            title: Text('Hitung di perangkat',
+                style: GoogleFonts.quicksand(fontWeight: FontWeight.bold)),
+            subtitle: Text(
+              onDevice
+                  ? 'Data klinis tidak dikirim ke server.'
+                  : 'Data dikirim ke server untuk dihitung.',
+              style: GoogleFonts.quicksand(
+                  fontSize: 12, color: AppColors.textSecondaryLight),
+            ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 8),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const gap = 10.0;
+              // Lebar dihitung dari kartu sebenarnya (sudah dikurangi padding).
+              final w = (constraints.maxWidth - gap) / 2;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  _numField('age', 'Usia (tahun)', w),
+                  _numField('bmi', 'BMI', w),
+                  _numField('hba1c', 'HbA1c (%)', w),
+                  _numField('glucose', 'Glukosa (mg/dL)', w),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          _dropdown('Jenis kelamin', gender, ClinicalData.genderCats,
+              genderLabels, onGender),
+          const SizedBox(height: 10),
+          _dropdown('Riwayat merokok', smoking, ClinicalData.smokingCats,
+              smokingLabels, onSmoking),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            value: hypertension,
+            onChanged: onHypertension,
+            title: Text('Hipertensi', style: GoogleFonts.quicksand()),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            value: heartDisease,
+            onChanged: onHeartDisease,
+            title: Text('Penyakit jantung', style: GoogleFonts.quicksand()),
+          ),
+          const SizedBox(height: 6),
           SizedBox(
             width: double.infinity,
             height: 50,
@@ -208,6 +386,17 @@ class _InputCard extends StatelessWidget {
                     )
                   : Text('Lihat hasil & penjelasan',
                       style: GoogleFonts.quicksand(fontWeight: FontWeight.bold)),
+            ),
+          ),
+          Center(
+            child: TextButton(
+              onPressed: (loading || filling) ? null : onFillDemo,
+              child: Text(
+                filling ? 'Mengambil data contoh...' : 'Isi dengan data contoh (demo)',
+                style: GoogleFonts.quicksand(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondaryLight),
+              ),
             ),
           ),
         ],
@@ -282,6 +471,25 @@ class _RiskCard extends StatelessWidget {
               color: AppColors.textPrimaryLight,
             ),
           ),
+          const SizedBox(height: 10),
+          Text(
+            '${result.source == 'device' ? 'Dihitung di perangkat' : 'Dihitung di server'}'
+            ' · model v${result.modelVersion}',
+            style: GoogleFonts.quicksand(
+                fontSize: 11, color: AppColors.textSecondaryLight),
+          ),
+          if (result.dataSource == 'synthetic')
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Model dilatih dengan data sintetis (hanya untuk demo).',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.quicksand(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.warning),
+              ),
+            ),
         ],
       ),
     );

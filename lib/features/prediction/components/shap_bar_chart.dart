@@ -21,7 +21,8 @@ class ShapBarChart extends StatelessWidget {
     final maxAbs = items
         .map((e) => e.contribution.abs())
         .reduce((a, b) => a > b ? a : b)
-        .clamp(0.0001, 999);
+        .clamp(0.0001, 999.0)
+        .toDouble();
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -59,7 +60,8 @@ class ShapBarChart extends StatelessWidget {
           ...items.take(6).toList().asMap().entries.map((entry) {
             final i = entry.key;
             final f = entry.value;
-            final ratio = (f.contribution.abs() / maxAbs).clamp(0.08, 1.0);
+            final ratio =
+                (f.contribution.abs() / maxAbs).clamp(0.08, 1.0).toDouble();
             final color = f.contribution >= 0 ? AppColors.warning : AppColors.success;
             return Padding(
               padding: const EdgeInsets.only(bottom: 14),

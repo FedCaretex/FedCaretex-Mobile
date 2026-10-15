@@ -26,7 +26,8 @@ class DP {
     if (noiseMultiplier <= 0) return update;
 
     double stddev = noiseMultiplier * clipNorm;
-    var rand = Random();
+    // Noise DP harus tak dapat diprediksi -> pakai RNG kriptografis.
+    var rand = Random.secure();
     var noisy = Float32List.fromList(update);
     
     for (int i = 0; i < noisy.length; i++) {

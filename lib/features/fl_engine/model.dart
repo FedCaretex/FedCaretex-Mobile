@@ -5,15 +5,19 @@ import 'dart:typed_data';
 /// Harus identik secara matematis dengan `flsys/model.py`.
 class MLPModel {
   static const List<int> layers = [15, 32, 16, 1];
+  static const int inputDim = 15;
   static const int totalParams = 1057; // 15*32+32 + 32*16+16 + 16*1+1 = 512 + 528 + 17 = 1057
 
   /// Forward pass untuk satu record.
   /// Mengembalikan probabilitas.
   static double predictProbaSingle(Float32List flat, Float32List x) {
     if (flat.length != totalParams) {
-      throw ArgumentError("Jumlah parameter harus \$totalParams");
+      throw ArgumentError("Jumlah parameter harus $totalParams, dapat ${flat.length}");
     }
 
+    if (x.length != inputDim) {
+      throw ArgumentError("Input harus $inputDim kolom (hasil ClinicalData.encode), dapat ${x.length}");
+    }
     var h = Float32List.fromList(x);
     int offset = 0;
 
@@ -34,7 +38,7 @@ class MLPModel {
           nextH[outIdx] = z > 0 ? z : 0.0; // ReLU
         } else {
           // Sigmoid with clipping
-          double clippedZ = z.clamp(-40.0, 40.0);
+          double clippedZ = z.clamp(-40.0, 40.0).toDouble();
           nextH[outIdx] = 1.0 / (1.0 + exp(-clippedZ));
         }
       }
@@ -54,9 +58,10 @@ class MLPModel {
     required double lr,
     required int batchSize,
     required double proxMu,
+    int? seed,
   }) {
     var w = Float32List.fromList(wGlobal);
-    var rand = Random();
+    var rand = seed == null ? Random() : Random(seed);
     
     int nPos = y.where((v) => v > 0.5).length;
     int nNeg = y.length - nPos;
@@ -105,7 +110,7 @@ class MLPModel {
               if (l < layers.length - 2) {
                 nextH[outIdx] = z > 0 ? z : 0.0;
               } else {
-                double clippedZ = z.clamp(-40.0, 40.0);
+                double clippedZ = z.clamp(-40.0, 40.0).toDouble();
                 nextH[outIdx] = 1.0 / (1.0 + exp(-clippedZ));
               }
             }

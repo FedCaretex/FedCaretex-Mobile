@@ -21,16 +21,20 @@ void main() {
     
     final pythonHash = jsonContent['sha256'] as String;
     
-    // Generate Dart weights sesuai aturan: w[i] = i/1057 - 0.5 (float32)
+    // Generate Dart weights sesuai aturan: w[i] = i/1057 - 0.5 (float32).
+    // NumPy membulatkan ke float32 dua kali: setelah pembagian, lalu setelah
+    // pengurangan. Hitung dalam float64 sekaligus akan menghasilkan bit berbeda.
+    final tmp = Float32List(1);
     final flat = Float32List(1057);
     for (int i = 0; i < 1057; i++) {
-      flat[i] = (i / 1057.0) - 0.5;
+      tmp[0] = i / 1057.0; // dibulatkan ke float32
+      flat[i] = tmp[0] - 0.5; // dibulatkan ke float32 lagi
     }
     
     final dartHash = CanonicalSerialize.hashParams(flat);
     
-    print("Python Hash: \$pythonHash");
-    print("Dart Hash:   \$dartHash");
+    print("Python Hash: $pythonHash");
+    print("Dart Hash:   $dartHash");
     
     expect(dartHash, equals(pythonHash), reason: "Hash di Dart harus sama persis dengan hash Python byte-per-byte!");
   });

@@ -28,8 +28,15 @@ final bottomNavIndexProvider = StateNotifierProvider<_NavNotifier, int>(
 );
 
 // ── MainScreen ──────────────────────────────────────────────
-class MainScreen extends ConsumerWidget {
+class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
+
+  @override
+  ConsumerState<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends ConsumerState<MainScreen> {
+  late final PageController _pageController;
 
   static const _screens = [
     DashboardScreen(),
@@ -40,40 +47,50 @@ class MainScreen extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    _pageController = PageController(
+      initialPage: ref.read(bottomNavIndexProvider),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onNavTap(int targetIndex) {
+    final currentIndex = ref.read(bottomNavIndexProvider);
+    if (currentIndex == targetIndex) return;
+
+    ref.read(bottomNavIndexProvider.notifier).setIndex(targetIndex);
+
+    final distance = (targetIndex - currentIndex).abs();
+
+    final duration = Duration(milliseconds: 360 + (distance * 80));
+
+    _pageController.animateToPage(
+      targetIndex,
+      duration: duration,
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final currentIndex = ref.watch(bottomNavIndexProvider);
 
     return Scaffold(
       extendBody: true,
-      // ── Page Body with smooth fade+slide transition ──
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 320),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        transitionBuilder: (child, animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0.0, 0.04),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-              )),
-              child: child,
-            ),
-          );
-        },
-        child: KeyedSubtree(
-          key: ValueKey<int>(currentIndex),
-          child: _screens[currentIndex],
-        ),
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(),
+        children: _screens,
       ),
-      // ── Floating Pill Navbar ─────────────────────────
       bottomNavigationBar: AppNavbar(
         currentIndex: currentIndex,
-        onTap: (i) => ref.read(bottomNavIndexProvider.notifier).setIndex(i),
+        onTap: _onNavTap,
       ),
     );
   }

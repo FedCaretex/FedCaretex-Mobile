@@ -1,7 +1,15 @@
+/// Nilai fitur dari backend bisa num ATAU String (mis. "Male"), jadi dinormalkan ke teks.
+String _formatValue(dynamic v) {
+  if (v is num) {
+    return v == v.roundToDouble() ? v.toInt().toString() : v.toString();
+  }
+  return v.toString();
+}
+
 class ShapItem {
   final String feature;
   final String label;
-  final double value;
+  final String value;
   final double contribution;
   final String direction;
   final String explanation;
@@ -15,14 +23,24 @@ class ShapItem {
     required this.explanation,
   });
 
-  factory ShapItem.fromJson(Map<String, dynamic> json) => ShapItem(
-        feature: json['feature'] as String,
-        label: json['label'] as String,
-        value: (json['value'] as num).toDouble(),
-        contribution: (json['contribution'] as num).toDouble(),
-        direction: json['direction'] as String,
-        explanation: json['explanation'] as String,
-      );
+  /// Backend tidak mengirim `explanation`; kalimatnya dibuat di klien.
+  static String describe(String label, String value, String direction) =>
+      '$label ($value) $direction risiko.';
+
+  factory ShapItem.fromJson(Map<String, dynamic> json) {
+    final label = json['label'] as String;
+    final value = _formatValue(json['value']);
+    final direction = json['direction'] as String;
+    return ShapItem(
+      feature: json['feature'] as String,
+      label: label,
+      value: value,
+      contribution: (json['contribution'] as num).toDouble(),
+      direction: direction,
+      explanation:
+          json['explanation'] as String? ?? describe(label, value, direction),
+    );
+  }
 }
 
 class PredictionResult {
@@ -30,9 +48,14 @@ class PredictionResult {
   final double probability;
   final String category;
   final String message;
+  final double baseValue;
   final Map<String, double> shapValues;
   final List<ShapItem> shapBreakdown;
   final List<String> recommendations;
+  final int modelVersion;
+  final String modelHash;
+  final String dataSource; // "real" | "synthetic"
+  final String source; // "device" | "server"
 
   const PredictionResult({
     required this.riskScore,
@@ -42,6 +65,11 @@ class PredictionResult {
     required this.shapValues,
     required this.shapBreakdown,
     required this.recommendations,
+    this.baseValue = 0,
+    this.modelVersion = 0,
+    this.modelHash = '',
+    this.dataSource = '',
+    this.source = 'server',
   });
 
   factory PredictionResult.fromJson(Map<String, dynamic> json) {
@@ -51,6 +79,7 @@ class PredictionResult {
       probability: (json['probability'] as num).toDouble(),
       category: json['category'] as String,
       message: json['message'] as String,
+      baseValue: (json['base_value'] as num?)?.toDouble() ?? 0,
       shapValues: shapRaw.map((k, v) => MapEntry(k, (v as num).toDouble())),
       shapBreakdown: ((json['shap_breakdown'] as List?) ?? [])
           .map((e) => ShapItem.fromJson(e as Map<String, dynamic>))
@@ -58,6 +87,10 @@ class PredictionResult {
       recommendations: ((json['recommendations'] as List?) ?? [])
           .map((e) => e.toString())
           .toList(),
+      modelVersion: (json['model_version'] as num?)?.toInt() ?? 0,
+      modelHash: json['model_hash'] as String? ?? '',
+      dataSource: json['data_source'] as String? ?? '',
+      source: 'server',
     );
   }
 }
@@ -93,18 +126,23 @@ class AuthSession {
   final String userId;
   final String name;
   final String email;
+  final String? photoUrl;
 
   const AuthSession({
     required this.token,
     required this.userId,
     required this.name,
     required this.email,
+    this.photoUrl,
   });
 
   factory AuthSession.fromJson(Map<String, dynamic> json) => AuthSession(
-        token: json['access_token'] as String,
-        userId: json['user_id'] as String,
-        name: json['name'] as String,
-        email: json['email'] as String,
+        token: (json['access_token'] ?? json['token'] ?? '') as String,
+        userId: (json['user_id'] ?? json['id'] ?? '') as String,
+        name: (json['name'] ?? '') as String,
+        email: (json['email'] ?? '') as String,
+        photoUrl: json['photo_url'] as String? ??
+            json['photoUrl'] as String? ??
+            json['avatar_url'] as String?,
       );
 }

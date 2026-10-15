@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../core/network/api_client.dart';
-import '../../../models/prediction_models.dart';
+import '../../core/network/api_client.dart';
+import '../../models/prediction_models.dart';
 
 class AuthNotifier extends StateNotifier<AuthSession?> {
   AuthNotifier() : super(null) {
@@ -15,8 +15,15 @@ class AuthNotifier extends StateNotifier<AuthSession?> {
     final userId = prefs.getString('user_id');
     final name = prefs.getString('name');
     final email = prefs.getString('email');
+    final photoUrl = prefs.getString('photo_url');
     if (token != null && userId != null && name != null && email != null) {
-      state = AuthSession(token: token, userId: userId, name: name, email: email);
+      state = AuthSession(
+        token: token,
+        userId: userId,
+        name: name,
+        email: email,
+        photoUrl: photoUrl,
+      );
     }
   }
 
@@ -54,6 +61,11 @@ class AuthNotifier extends StateNotifier<AuthSession?> {
     await prefs.setString('user_id', session.userId);
     await prefs.setString('name', session.name);
     await prefs.setString('email', session.email);
+    if (session.photoUrl != null && session.photoUrl!.isNotEmpty) {
+      await prefs.setString('photo_url', session.photoUrl!);
+    } else {
+      await prefs.remove('photo_url');
+    }
     state = session;
   }
 
